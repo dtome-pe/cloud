@@ -1,0 +1,49 @@
+- name: Deploy WordPress stack on AWS
+  hosts: aws
+  become: true
+
+  tasks:
+    - name: Install Docker + Docker Compose
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - python3-pip
+        state: present
+        update_cache: true
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Copy docker-compose file to remote
+      copy:
+        src: docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+        owner: ubuntu
+        mode: '0644'
+
+    - name: Copy nginx.conf file to remote
+      copy:
+        src: nginx.conf
+        dest: /home/ubuntu/nginx.conf
+        owner: ubuntu
+        mode: '0644'
+
+    - name: Copy SSL certificates
+      copy:
+        src: ssl/
+        dest: /home/ubuntu/ssl/
+        mode: '0644'
+
+    - name: Stop existing stack (clean start)
+      command: docker-compose down
+      args:
+        chdir: /home/ubuntu
+
+    - name: Launch Docker Compose stack
+      command: docker-compose up -d
+      args:
+        chdir: /home/ubuntu
